@@ -32,12 +32,12 @@ int main()
 	uint8_t press_out_l = 0;
 	uint8_t press_out_h = 0;
 	uint32_t press_out = 0;
-	double pressure = 0;
+	double pressure = 0.0;
 
 	uint8_t temp_out_l = 0;
 	uint8_t temp_out_h = 0;
-	uint16_t temp_out = 0;
-	double temperature = 0;
+	int16_t temp_out = 0;
+	double temperature = 0.0;
 
 	/*	open i2c bus for communication	*/
 	int i2c_fd = 0;
@@ -73,6 +73,33 @@ int main()
 	/*	enable i2c, enable one-shot measurement mode, 	*/
 	i2c_smbus_write_byte_data(i2c_fd, CTRL_REG2_ADDR, 0x01);	
 	
+	/*	now we should wait until the measurements are complete:	*/
+	/*	every 10 msecs we should check for 0x00 in CTRL_REG2 address due to its self-clearing */
+	while(i2c_smbus_read_byte_data(i2c_fd, CTRL_REG2_ADDR) != 0)
+	{ 
+		usleep(25000);
+	}
+
+	/*	get measurements	*/
+	press_out_xl = i2c_smbus_read_byte_data(i2c_fd, PRESS_OUT_XL_ADDR);	
+	press_out_l = i2c_smbus_read_byte_data(i2c_fd, PRESS_OUT_L_ADDR);
+	press_out_h = i2c_smbus_read_byte_data(i2c_fd, PRESS_OUT_H_ADDR);
+	press_out = (press_out_h << 16) | (press_out_l << 8) | (press_out_xl);
+	pressure = press_out / 4096.0;
+
+	temp_out_l = i2c_smbus_read_byte_data(i2c_fd, TEMP_OUT_L_ADDR);
+	temp_out_h = i2c_smbus_read_byte_data(i2c_fd, TEMP_OUT_H_ADDR);
+	temp_out = (temp_out_h << 8) | (temp_out_l);
+	temperature = 42.5 + (temp_out / 480.0);
+
+	/*	print proccessed pressure in hectopascals (1hPa = 100Pa) and temperature in degree Celsius	*/
+	printf("Temperature = %fC, pressure = %fhPa\n", temperature, pressure);
+
+	/*	power off the device	*/
+	i2c_smbus_write_byte_data(i2c_fd, CTRL_REG1_ADDR, 0x00);
 	
+	/*	close i2c communication	*/
+	close(i2c_fd);
+
 	return 0;
 }
