@@ -14,7 +14,7 @@
 /*	control registers for enabling I2C interface, single shot measurement etc	*/
 #define CTRL_REG1_ADDR	0x20
 #define CTRL_REG2_ADDR	0x21
-#define FIFO_CTRL_ADRR	0x2E
+#define FIFO_CTRL_ADDR	0x2E
 
 /*	registers containing pressure	and temperature measurements	*/
 #define PRESS_OUT_XL_ADDR	0x28
@@ -71,19 +71,14 @@ int main()
 	/* power on device	*/
 	i2c_smbus_write_byte_data(i2c_fd, CTRL_REG1_ADDR, 0x80);		
 
-	/*	enable FIFO and FIFO decimation at 1Hz   	*/
-	i2c_smbus_write_byte_data(i2c_fd, CTRL_REG2_ADDR, 0x50);	
+	/*	enable FIFO, Watermark level use and 1Hz decimation	*/
+	i2c_smbus_write_byte_data(i2c_fd, CTRL_REG2_ADDR, 0x70);	
 
-	/*	enable FIFO Stream mode	*/	
-	i2c_smbus_write_byte_data(i2c_fd, FIFO_CTRL_ADDR, 0x40);
+	/*	enable FIFO Mean mode, Watermark level at 8 samples	*/	
+	i2c_smbus_write_byte_data(i2c_fd, FIFO_CTRL_ADDR, 0xC7);
 
-	/*	now we should wait until the measurements are complete:	*/
-	/*	every 10 msecs we should check for 0x00 in CTRL_REG2 address due to its self-clearing */	
-	while(i2c_smbus_read_byte_data(i2c_fd, CTRL_REG2_ADDR) != 0)
-	{ 
-		usleep(25000);
-	}
-
+while(1){
+	usleep(25000);
 	/*	get measurements	*/
 	press_out_xl = i2c_smbus_read_byte_data(i2c_fd, PRESS_OUT_XL_ADDR);	
 	press_out_l = i2c_smbus_read_byte_data(i2c_fd, PRESS_OUT_L_ADDR);
@@ -98,7 +93,7 @@ int main()
 
 	/*	print proccessed pressure in hectopascals (1hPa = 100Pa) and temperature in degree Celsius	*/
 	printf("Temperature = %fC, pressure = %fhPa\n", temperature, pressure);
-
+}	
 	/*	power off the device	*/
 	i2c_smbus_write_byte_data(i2c_fd, CTRL_REG1_ADDR, 0x00);
 	
