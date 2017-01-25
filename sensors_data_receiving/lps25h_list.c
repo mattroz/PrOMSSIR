@@ -68,17 +68,20 @@ int main()
 	/*	reset device	*/
 	i2c_smbus_write_byte_data(i2c_fd, CTRL_REG1_ADDR, 0x00);
 
-	/* power on device	*/
-	i2c_smbus_write_byte_data(i2c_fd, CTRL_REG1_ADDR, 0x80);		
+	/* power on device, set output data rate bit at 7Hz,
+		enable block data update	*/
+	i2c_smbus_write_byte_data(i2c_fd, CTRL_REG1_ADDR, 0xA4);		
 
-	/*	enable FIFO, Watermark level use and 1Hz decimation	*/
-	i2c_smbus_write_byte_data(i2c_fd, CTRL_REG2_ADDR, 0x70);	
+	/*	reset FIFO register, enable FIFO at main control register, 
+		enable 1Hz decimation	*/
+	i2c_smbus_write_byte_data(i2c_fd, FIFO_CTRL_ADDR, 0x00);
+	i2c_smbus_write_byte_data(i2c_fd, CTRL_REG2_ADDR, 0x50);	
 
-	/*	enable FIFO Mean mode, Watermark level at 8 samples	*/	
-	i2c_smbus_write_byte_data(i2c_fd, FIFO_CTRL_ADDR, 0xC7);
+	/*	enable FIFO Mean mode	*/	
+	i2c_smbus_write_byte_data(i2c_fd, FIFO_CTRL_ADDR, 0xC0);
 
 while(1){
-	usleep(25000);
+	//usleep(25000);
 	/*	get measurements	*/
 	press_out_xl = i2c_smbus_read_byte_data(i2c_fd, PRESS_OUT_XL_ADDR);	
 	press_out_l = i2c_smbus_read_byte_data(i2c_fd, PRESS_OUT_L_ADDR);
